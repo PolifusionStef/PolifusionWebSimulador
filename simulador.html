@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Avanzado de Tuberías</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: var(--dark);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .control-group {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+        }
+        .control-group h3 {
+            margin-top: 0;
+            color: var(--primary);
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .control-item {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95em;
+        }
+        select, input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #bdc3c7;
+            background: white;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        select:focus, input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        input[type="range"] {
+            flex: 1;
+            padding: 0;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .range-value {
+            width: 70px;
+            text-align: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.95em;
+            border: 1px solid #ddd;
+        }
+        .material-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .material-checkbox {
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .material-checkbox:hover {
+            background: #e8f4fc;
+        }
+        .material-checkbox input {
+            width: auto;
+            margin-right: 8px;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button i {
+            font-size: 1.1em;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .btn-outline {
+            background-color: white;
+            color: var(--dark);
+            border: 1px solid #bdc3c7;
+        }
+        .btn-outline:hover {
+            background-color: #f8f9fa;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            height: 500px;
+        }
+        .chart-title {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--dark);
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            font-size: 0.95em;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: center;
+        }
+        th {
+            background-color: var(--dark);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e8f4fc;
+        }
+        .warning-panel {
+            background-color: #fdecea;
+            border-left: 4px solid var(--danger);
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .warning-item {
+            color: var(--danger);
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        .warning-icon {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .section-title {
+            font-size: 1.3em;
+            color: var(--dark);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        .config-save {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .config-save input {
+            flex: 1;
+        }
+        .config-save button {
+            width: auto;
+        }
+        .saved-configs {
+            margin-top: 15px;
+        }
+        .saved-config {
+            display: inline-block;
+            background: #e8f4fc;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #bdc3c7;
+        }
+        .saved-config:hover {
+            background: #d4e6f7;
+            border-color: var(--primary);
+        }
+        .saved-config .delete {
+            margin-left: 8px;
+            color: var(--danger);
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+            .button-group button {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Simulador Avanzado de Tuberías</h1>
+        <p class="subtitle">Herramienta profesional para comparación técnica de sistemas de tuberías</p>
+        
+        <div class="control-panel">
+            <div class="control-group">
+                <h3><i class="fas fa-pipe"></i> Especificaciones de Tubería</h3>
+                
+                <div class="control-item">
+                    <label for="diametro">Diámetro nominal (mm)</label>
+                    <select id="diametro">
+                        <option value="20">DN20</option>
+                        <option value="25">DN25</option>
+                        <option value="32" selected>DN32</option>
+                        <option value="40">DN40</option>
+                        <option value="50">DN50</option>
+                        <option value="63">DN63</option>
+                        <option value="75">DN75</option>
+                        <option value="90">DN90</option>
+                        <option value="110">DN110</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label for="clase_presion">Clase de presión</label>
+                    <select id="clase_presion">
+                        <option value="PN6">PN6 (6 bar)</option>
+                        <option value="PN10" selected>PN10 (10 bar)</option>
+                        <option value="PN16">PN16 (16 bar)</option>
+                        <option value="PN20">PN20 (20 bar)</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label for="espesor">Espesor de pared (mm)</label>
+                    <div class="range-container">
+                        <input type="range" id="espesor" min="1" max="5" value="2.5" step="0.1">
+                        <span id="espesor_value" class="range-value">2.5</span>
+                    </div>
+                </div>
+                
+                <div class="control-item">
+                    <label>Materiales a comparar</label>
+                    <div class="material-selector" id="materialSelector">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3><i class="fas fa-tint"></i> Condiciones de Operación</h3>
+                
+                <div class="control-item">
+                    <label for="fluido">Tipo de fluido</label>
+                    <select id="fluido">
+                        <option value="Agua fría" selected>Agua fría (≤25°C)</option>
+                        <option value="Agua caliente">Agua caliente (≥60°C)</option>
+                        <option value="Agua residual">Agua residual</option>
+                        <option value="Productos químicos">Productos químicos</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label for="temperatura">Temperatura del fluido (°C)</label>
+                    <div class="range-container">
+                        <input type="range" id="temperatura" min="10" max="120" value="20" step="1">
+                        <span id="temp_value" class="range-value">20</span>
+                    </div>
+                </div>
+                
+                <div class="control-item">
+                    <label for="presion">Presión de trabajo (bar)</label>
+                    <div class="range-container">
+                        <input type="range" id="presion" min="2" max="25" value="6" step="0.5">
+                        <span id="presion_value" class="range-value">6.0</span>
+                    </div>
+                </div>
+                
+                <div class="control-item">
+                    <label for="longitud">Longitud de tubería (m)</label>
+                    <div class="range-container">
+                        <input type="range" id="longitud" min="1" max="200" value="10" step="1">
+                        <span id="longitud_value" class="range-value">10</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3><i class="fas fa-cog"></i> Configuración</h3>
+                
+                <div class="control-item">
+                    <label for="unidades">Unidades de medida</label>
+                    <select id="unidades">
+                        <option value="metric" selected>Sistema Métrico</option>
+                        <option value="imperial">Sistema Imperial</option>
+                    </select>
+                </div>
+                
+                <div class="control-item">
+                    <label>Guardar configuración</label>
+                    <div class="config-save">
+                        <input type="text" id="configName" placeholder="Nombre de la configuración">
+                        <button class="btn-outline" id="saveConfig"><i class="fas fa-save"></i> Guardar</button>
+                    </div>
+                    <div class="saved-configs" id="savedConfigs">
+                        <!-- Configuraciones guardadas aparecerán aquí -->
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-primary" id="calcular"><i class="fas fa-calculator"></i> Calcular</button>
+                    <button class="btn-secondary" id="exportExcel"><i class="fas fa-file-excel"></i> Excel</button>
+                    <button class="btn-secondary" id="exportPDF"><i class="fas fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results">
+            <div id="warnings"></div>
+            
+            <h3 class="section-title"><i class="fas fa-chart-line"></i> Resultados Gráficos</h3>
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Comparación Multidimensional</h3>
+                    <div id="radarChart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Desempeño Hidráulico</h3>
+                    <div id="hydraulicChart"></div>
+                </div>
+            </div>
+            
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Análisis de Costos y Eficiencia</h3>
+                    <div id="costChart"></div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Comparación Dimensional</h3>
+                    <div id="pipeChart"></div>
+                </div>
+            </div>
+            
+            <h3 class="section-title"><i class="fas fa-table"></i> Resultados Detallados</h3>
+            <div id="resultsTable"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos técnica mejorada
+        const MATERIALES = {
+            'PP-R Polifusión': {
+                color: '#3498db',
+                propiedades: {
+                    'PN6': { precio: 1.8 },
+                    'PN10': { precio: 2.1 },
+                    'PN16': { precio: 2.5 },
+                    'PN20': { precio: 3.0 }
+                },
+                C: 150,
+                max_temp: 95,
+                max_presion: 20,
+                alpha: 0.15,
+                descripcion: 'Polipropileno random copolymer (PP-R) para sistemas de conducción de agua caliente y fría'
+            },
+            'PP-R THC': {
+                color: '#2980b9',
+                propiedades: {
+                    'PN6': { precio: 1.9 },
+                    'PN10': { precio: 2.2 },
+                    'PN16': { precio: 2.6 },
+                    'PN20': { precio: 3.1 }
+                },
+                C: 145,
+                max_temp: 90,
+                max_presion: 18,
+                alpha: 0.14,
+                descripcion: 'PP-R con tecnología de alta cristalinidad para mayor resistencia'
+            },
+            'PP-R Rotoplas': {
+                color: '#1f618d',
+                propiedades: {
+                    'PN6': { precio: 2.0 },
+                    'PN10': { precio: 2.3 },
+                    'PN16': { precio: 2.7 },
+                    'PN20': { precio: 3.2 }
+                },
+                C: 148,
+                max_temp: 92,
+                max_presion: 19,
+                alpha: 0.16,
+                descripcion: 'PP-R con aditivos especiales para mayor durabilidad'
+            },
+            'PVC-U': {
+                color: '#e74c3c',
+                propiedades: {
+                    'PN6': { precio: 1.5 },
+                    'PN10': { precio: 1.8 },
+                    'PN16': { precio: 2.2 }
+                },
+                C: 140,
+                max_temp: 45,
+                max_presion: 16,
+                alpha: 0.06,
+                descripcion: 'Policloruro de vinilo no plastificado para conducción de agua fría'
+            },
+            'CPVC': {
+                color: '#f39c12',
+                propiedades: {
+                    'PN6': { precio: 2.1 },
+                    'PN10': { precio: 2.4 },
+                    'PN16': { precio: 2.8 },
+                    'PN20': { precio: 3.3 }
+                },
+                C: 142,
+                max_temp: 93,
+                max_presion: 20,
+                alpha: 0.07,
+                descripcion: 'Cloruro de polivinilo clorado para agua caliente y químicos'
+            },
+            'HDPE': {
+                color: '#2ecc71',
+                propiedades: {
+                    'PN6': { precio: 1.6 },
+                    'PN10': { precio: 1.9 },
+                    'PN16': { precio: 2.3 }
+                },
+                C: 150,
+                max_temp: 60,
+                max_presion: 16,
+                alpha: 0.20,
+                descripcion: 'Polietileno de alta densidad para sistemas de presión'
+            }
+        };
+
+        // Configuración inicial
+        let configuracionesGuardadas = JSON.parse(localStorage.getItem('pipeConfigs')) || {};
+        let resultados = {};
+        let materialesSeleccionados = ['PP-R Polifusión', 'PVC-U'];
+
+        // Inicializar controles
+        function inicializarControles() {
+            // Llenar selector de materiales
+            const materialSelector = document.getElementById('materialSelector');
+            materialSelector.innerHTML = '';
+            
+            Object.keys(MATERIALES).forEach(material => {
+                const color = MATERIALES[material].color;
+                const isChecked = materialesSeleccionados.includes(material);
+                
+                const checkbox = document.createElement('div');
+                checkbox.className = 'material-checkbox';
+                checkbox.style.borderLeft = `3px solid ${color}`;
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="mat-${material}" ${isChecked ? 'checked' : ''}>
+                    <label for="mat-${material}">${material}</label>
+                `;
+                
+                checkbox.querySelector('input').addEventListener('change', function() {
+                    if (this.checked) {
+                        if (!materialesSeleccionados.includes(material)) {
+                            materialesSeleccionados.push(material);
+                        }
+                    } else {
+                        materialesSeleccionados = materialesSeleccionados.filter(m => m !== material);
+                    }
+                    
+                    if (materialesSeleccionados.length < 2) {
+                        this.checked = true;
+                        alert('Debe seleccionar al menos 2 materiales para comparar');
+                        return;
+                    }
+                    
+                    actualizarSimulacion();
+                });
+                
+                materialSelector.appendChild(checkbox);
+            });
+            
+            // Actualizar valores de los rangos
+            document.getElementById('temperatura').addEventListener('input', function() {
+                document.getElementById('temp_value').textContent = this.value;
+            });
+            
+            document.getElementById('presion').addEventListener('input', function() {
+                document.getElementById('presion_value').textContent = parseFloat(this.value).toFixed(1);
+            });
+            
+            document.getElementById('longitud').addEventListener('input', function() {
+                document.getElementById('longitud_value').textContent = this.value;
+            });
+            
+            document.getElementById('espesor').addEventListener('input', function() {
+                document.getElementById('espesor_value').textContent = parseFloat(this.value).toFixed(1);
+            });
+            
+            // Cargar configuraciones guardadas
+            cargarConfiguracionesGuardadas();
+            
+            // Event listeners para botones
+            document.getElementById('calcular').addEventListener('click', actualizarSimulacion);
+            document.getElementById('exportExcel').addEventListener('click', exportarExcel);
+            document.getElementById('exportPDF').addEventListener('click', exportarPDF);
+            document.getElementById('saveConfig').addEventListener('click', guardarConfiguracion);
+            
+            // Validar clase de presión al cambiar
+            document.getElementById('clase_presion').addEventListener('change', validarCombinaciones);
+        }
+
+        // Cargar configuraciones guardadas
+        function cargarConfiguracionesGuardadas() {
+            const savedConfigs = document.getElementById('savedConfigs');
+            savedConfigs.innerHTML = '';
+            
+            for (const [nombre, config] of Object.entries(configuracionesGuardadas)) {
+                const configElement = document.createElement('div');
+                configElement.className = 'saved-config';
+                configElement.innerHTML = `
+                    ${nombre} <span class="delete" data-name="${nombre}">×</span>
+                `;
+                
+                configElement.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('delete')) {
+                        e.stopPropagation();
+                        delete configuracionesGuardadas[e.target.getAttribute('data-name')];
+                        localStorage.setItem('pipeConfigs', JSON.stringify(configuracionesGuardadas));
+                        cargarConfiguracionesGuardadas();
+                    } else {
+                        cargarConfiguracion(nombre);
+                    }
+                });
+                
+                savedConfigs.appendChild(configElement);
+            }
+        }
+
+        // Guardar configuración
+        function guardarConfiguracion() {
+            const nombre = document.getElementById('configName').value.trim();
+            if (!nombre) {
+                alert('Por favor ingrese un nombre para la configuración');
+                return;
+            }
+            
+            const config = {
+                diametro: document.getElementById('diametro').value,
+                clase_presion: document.getElementById('clase_presion').value,
+                espesor: document.getElementById('espesor').value,
+                materiales: materialesSeleccionados,
+                fluido: document.getElementById('fluido').value,
+                temperatura: document.getElementById('temperatura').value,
+                presion: document.getElementById('presion').value,
+                longitud: document.getElementById('longitud').value,
+                unidades: document.getElementById('unidades').value
+            };
+            
+            configuracionesGuardadas[nombre] = config;
+            localStorage.setItem('pipeConfigs', JSON.stringify(configuracionesGuardadas));
+            document.getElementById('configName').value = '';
+            cargarConfiguracionesGuardadas();
+            
+            // Mostrar notificación
+            const notification = document.createElement('div');
+            notification.textContent = `Configuración "${nombre}" guardada`;
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.backgroundColor = '#2ecc71';
+            notification.style.color = 'white';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '5px';
+            notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            notification.style.zIndex = '1000';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        // Cargar configuración
+        function cargarConfiguracion(nombre) {
+            const config = configuracionesGuardadas[nombre];
+            if (!config) return;
+            
+            document.getElementById('diametro').value = config.diametro;
+            document.getElementById('clase_presion').value = config.clase_presion;
+            document.getElementById('espesor').value = config.espesor;
+            document.getElementById('espesor_value').textContent = config.espesor;
+            document.getElementById('fluido').value = config.fluido;
+            document.getElementById('temperatura').value = config.temperatura;
+            document.getElementById('temp_value').textContent = config.temperatura;
+            document.getElementById('presion').value = config.presion;
+            document.getElementById('presion_value').textContent = config.presion;
+            document.getElementById('longitud').value = config.longitud;
+            document.getElementById('longitud_value').textContent = config.longitud;
+            document.getElementById('unidades').value = config.unidades;
+            
+            materialesSeleccionados = config.materiales;
+            inicializarControles();
+            actualizarSimulacion();
+        }
+
+        // Validar combinaciones inválidas
+        function validarCombinaciones() {
+            const clase_presion = document.getElementById('clase_presion').value.split(' ')[0];
+            const warnings = [];
+            
+            materialesSeleccionados.forEach(material => {
+                if (!MATERIALES[material].propiedades[clase_presion]) {
+                    warnings.push(`${material} no está disponible en ${clase_presion}`);
+                }
+            });
+            
+            if (warnings.length > 0) {
+                alert(`Advertencias:\n${warnings.join('\n')}\n\nSe ajustará la selección automáticamente.`);
+                materialesSeleccionados = materialesSeleccionados.filter(material => 
+                    MATERIALES[material].propiedades[clase_presion]
+                );
+                
+                if (materialesSeleccionados.length < 2) {
+                    materialesSeleccionados = ['PP-R Polifusión', 'PVC-U'];
+                }
+                
+                inicializarControles();
+            }
+        }
+
+        // Función principal de cálculo
+        function calcularIndicadores(diametro, clase_presion, material, temperatura, presion, longitud, fluido, espesor) {
+            const props = MATERIALES[material];
+            const diametro_int = diametro - 2 * espesor;
+            const area = Math.PI * Math.pow(diametro_int/2, 2) / 1000;
+            
+            // Factor de corrección por temperatura
+            let factor_temp = 1.0;
+            if (fluido === 'Agua caliente') {
+                factor_temp = temperatura <= 70 ? 0.9 : 0.7;
+            } else if (fluido === 'Productos químicos') {
+                factor_temp = 0.8;
+            }
+            
+            // Cálculos técnicos
+            const sdr = diametro / espesor;
+            const rio = Math.pow(diametro_int, 4) * presion * factor_temp / 1000;
+            
+            let vida_util = 50 * Math.exp(-0.03*(temperatura-20) - 0.02*(presion-6)) * factor_temp;
+            vida_util = Math.max(5, vida_util);
+            
+            const precio = props.propiedades[clase_presion]?.precio || 0;
+            const costo_total = precio * longitud;
+            const eficiencia = costo_total > 0 ? rio / costo_total : 0;
+            
+            const velocidad = 1.318 * props.C * Math.pow(diametro_int/1000, 0.63) * Math.pow(presion/100, 0.54);
+            const caudal = area * velocidad * 1000;
+            const perdida_carga = 10.67 * Math.pow(caudal/1000, 1.852) / (Math.pow(props.C, 1.852) * Math.pow(diametro_int/1000, 4.871)) * 1000;
+            
+            return {
+                'Diámetro Int. (mm)': parseFloat(diametro_int.toFixed(2)),
+                'Espesor (mm)': parseFloat(espesor.toFixed(2)),
+                'SDR': parseFloat(sdr.toFixed(1)),
+                'Área (cm²)': parseFloat(area.toFixed(2)),
+                'Velocidad (m/s)': parseFloat(velocidad.toFixed(2)),
+                'Caudal (l/s)': parseFloat(caudal.toFixed(2)),
+                'Pérdida carga (m/km)': parseFloat(perdida_carga.toFixed(2)),
+                'RIO': parseFloat(rio.toFixed(1)),
+                'Vida útil (años)': parseFloat(vida_util.toFixed(1)),
+                'Costo total (USD)': parseFloat(costo_total.toFixed(2)),
+                'Eficiencia': parseFloat(eficiencia.toFixed(2)),
+                'Factor temperatura': factor_temp,
+                'Dilatación (mm)': parseFloat((props.alpha * longitud * (temperatura-20)).toFixed(2)),
+                'Descripción': props.descripcion
+            };
+        }
+
+        // Actualizar toda la visualización
+        function actualizarSimulacion() {
+            // Obtener parámetros
+            const diametro = parseInt(document.getElementById('diametro').value);
+            const clase_presion = document.getElementById('clase_presion').value.split(' ')[0];
+            const temperatura = parseInt(document.getElementById('temperatura').value);
+            const presion = parseFloat(document.getElementById('presion').value);
+            const longitud = parseInt(document.getElementById('longitud').value);
+            const fluido = document.getElementById('fluido').value;
+            const espesor = parseFloat(document.getElementById('espesor').value);
+            
+            // Calcular para materiales seleccionados
+            resultados = {};
+            const warnings = [];
+            
+            materialesSeleccionados.forEach(material => {
+                if (MATERIALES[material].propiedades[clase_presion]) {
+                    resultados[material] = calcularIndicadores(
+                        diametro, clase_presion, material, temperatura, presion, longitud, fluido, espesor
+                    );
+                    
+                    // Verificar límites
+                    const props = MATERIALES[material];
+                    if (temperatura > props.max_temp) {
+                        warnings.push(`${material} excede temperatura máxima (${props.max_temp}°C)`);
+                    }
+                    if (presion > props.max_presion) {
+                        warnings.push(`${material} excede presión máxima (${props.max_presion} bar)`);
+                    }
+                    if (resultados[material]['Velocidad (m/s)'] > 2.5) {
+                        warnings.push(`${material} tiene alta velocidad (${resultados[material]['Velocidad (m/s)']} m/s)`);
+                    }
+                }
+            });
+            
+            // Mostrar advertencias
+            const warningsDiv = document.getElementById('warnings');
+            if (warnings.length > 0) {
+                let warningsHTML = '<div class="warning-panel"><h3><i class="fas fa-exclamation-triangle"></i> Advertencias Técnicas</h3>';
+                warnings.forEach(warning => {
+                    warningsHTML += `<div class="warning-item"><span class="warning-icon">⚠️</span> ${warning}</div>`;
+                });
+                warningsHTML += '</div>';
+                warningsDiv.innerHTML = warningsHTML;
+            } else {
+                warningsDiv.innerHTML = '';
+            }
+            
+            // Actualizar gráficos
+            actualizarRadarChart();
+            actualizarHydraulicChart();
+            actualizarCostChart();
+            actualizarPipeChart();
+            actualizarTablaResultados();
+        }
+
+        // Gráfico Radar mejorado
+        function actualizarRadarChart() {
+            const categorias = ['RIO', 'Vida útil (años)', 'Eficiencia', 'Velocidad (m/s)', 'Caudal (l/s)'];
+            const escalas = {
+                'RIO': 1000,
+                'Vida útil (años)': 50,
+                'Eficiencia': 0.5,
+                'Velocidad (m/s)': 2,
+                'Caudal (l/s)': 5
+            };
+            
+            const datos = materialesSeleccionados.map(material => {
+                const valores = categorias.map(cat => {
+                    return resultados[material][cat] / escalas[cat];
+                });
+                
+                return {
+                    type: 'scatterpolar',
+                    r: [...valores, valores[0]],
+                    theta: [...categorias, categorias[0]],
+                    fill: 'toself',
+                    name: material,
+                    line: { color: MATERIALES[material].color, width: 2 },
+                    fillcolor: MATERIALES[material].color + '33',
+                    hoverinfo: 'text',
+                    text: categorias.map((cat, i) => 
+                        `<b>${cat}</b>: ${resultados[material][cat]}<br>${material}`
+                    )
+                };
+            });
+            
+            const layout = {
+                polar: {
+                    radialaxis: {
+                        visible: true,
+                        range: [0, 1],
+                        tickvals: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                        ticktext: ['0%', '20%', '40%', '60%', '80%', '100%'],
+                        tickfont: { size: 10 }
+                    },
+                    angularaxis: {
+                        rotation: 90,
+                        direction: 'clockwise'
+                    }
+                },
+                title: {
+                    text: '<b>Comparación Multidimensional</b><br><sub>Valores normalizados al máximo esperado</sub>',
+                    font: { size: 14 }
+                },
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    y: -0.15,
+                    font: { size: 12 }
+                },
+                margin: { t: 80, l: 80, r: 80, b: 80 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('radarChart', datos, layout);
+        }
+
+        // Gráfico Hidráulico mejorado
+        function actualizarHydraulicChart() {
+            const trace1 = {
+                x: materialesSeleccionados,
+                y: materialesSeleccionados.map(m => resultados[m]['Velocidad (m/s)']),
+                name: 'Velocidad (m/s)',
+                type: 'bar',
+                marker: { color: '#3498db' },
+                text: materialesSeleccionados.map(m => resultados[m]['Velocidad (m/s)'].toFixed(2)),
+                textposition: 'auto'
+            };
+            
+            const trace2 = {
+                x: materialesSeleccionados,
+                y: materialesSeleccionados.map(m => resultados[m]['Caudal (l/s)']),
+                name: 'Caudal (l/s)',
+                type: 'bar',
+                marker: { color: '#e74c3c' },
+                yaxis: 'y2',
+                text: materialesSeleccionados.map(m => resultados[m]['Caudal (l/s)'].toFixed(2)),
+                textposition: 'auto'
+            };
+            
+            const layout = {
+                title: '<b>Desempeño Hidráulico</b>',
+                yaxis: { 
+                    title: 'Velocidad (m/s)',
+                    range: [0, Math.max(...materialesSeleccionados.map(m => resultados[m]['Velocidad (m/s)'])) * 1.2]
+                },
+                yaxis2: {
+                    title: 'Caudal (l/s)',
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, Math.max(...materialesSeleccionados.map(m => resultados[m]['Caudal (l/s)'])) * 1.2]
+                },
+                shapes: [{
+                    type: 'line',
+                    x0: -0.5,
+                    x1: materialesSeleccionados.length - 0.5,
+                    y0: 2.5,
+                    y1: 2.5,
+                    line: { color: 'red', width: 2, dash: 'dot' },
+                    layer: 'below'
+                }],
+                annotations: [{
+                    x: 0.5,
+                    y: 2.6,
+                    xref: 'paper',
+                    yref: 'y',
+                    text: 'Límite velocidad recomendada',
+                    showarrow: false,
+                    font: { color: 'red', size: 12 }
+                }],
+                margin: { t: 60, l: 60, r: 60, b: 60 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('hydraulicChart', [trace1, trace2], layout);
+        }
+
+        // Gráfico de Costos mejorado
+        function actualizarCostChart() {
+            const trace1 = {
+                x: materialesSeleccionados,
+                y: materialesSeleccionados.map(m => resultados[m]['Costo total (USD)']),
+                name: 'Costo total (USD)',
+                type: 'bar',
+                marker: { 
+                    color: materialesSeleccionados.map(m => MATERIALES[m].color)
+                },
+                text: materialesSeleccionados.map(m => `$${resultados[m]['Costo total (USD)'].toFixed(2)}`),
+                textposition: 'auto'
+            };
+            
+            const trace2 = {
+                x: materialesSeleccionados,
+                y: materialesSeleccionados.map(m => resultados[m]['Eficiencia'] * 100),
+                name: 'Eficiencia (%)',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#2c3e50', width: 2, dash: 'dot' },
+                marker: { symbol: 'diamond', size: 10 },
+                yaxis: 'y2',
+                text: materialesSeleccionados.map(m => `${(resultados[m]['Eficiencia'] * 100).toFixed(1)}%`),
+                textposition: 'top center'
+            };
+            
+            const layout = {
+                title: '<b>Análisis de Costos</b>',
+                yaxis: { title: 'Costo total (USD)' },
+                yaxis2: {
+                    title: 'Eficiencia (%)',
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, 100]
+                },
+                margin: { t: 60, l: 60, r: 80, b: 60 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('costChart', [trace1, trace2], layout);
+        }
+
+        // Gráfico de Tuberías mejorado
+        function actualizarPipeChart() {
+            const diametro = parseInt(document.getElementById('diametro').value);
+            const traces = [];
+            const annotations = [];
+            
+            materialesSeleccionados.forEach((material, i) => {
+                const espesor = resultados[material]['Espesor (mm)'];
+                const radio_ext = diametro / 2;
+                const radio_int = radio_ext - espesor;
+                
+                traces.push({
+                    type: 'scatter',
+                    x: [i * 3],
+                    y: [0],
+                    mode: 'markers',
+                    marker: {
+                        size: radio_ext * 8,
+                        color: MATERIALES[material].color,
+                        opacity: 0.3
+                    },
+                    showlegend: false,
+                    hoverinfo: 'text',
+                    text: [`<b>${material}</b><br>Diámetro: ${diametro}mm<br>Espesor: ${espesor}mm`]
+                });
+                
+                traces.push({
+                    type: 'scatter',
+                    x: [i * 3],
+                    y: [0],
+                    mode: 'markers',
+                    marker: {
+                        size: radio_int * 8,
+                        color: 'white',
+                        line: { color: MATERIALES[material].color, width: 1 }
+                    },
+                    showlegend: false
+                });
+                
+                annotations.push({
+                    x: i * 3,
+                    y: -radio_ext - 5,
+                    text: `<b>${material}</b><br>SDR ${resultados[material]['SDR']}`,
+                    showarrow: false,
+                    xanchor: 'center',
+                    yanchor: 'top',
+                    font: { color: MATERIALES[material].color, size: 12 }
+                });
+            });
+            
+            const layout = {
+                title: '<b>Comparación Dimensional</b>',
+                xaxis: {
+                    range: [-1, materialesSeleccionados.length * 3 - 2],
+                    showgrid: false,
+                    zeroline: false,
+                    showticklabels: false
+                },
+                yaxis: {
+                    scaleanchor: 'x',
+                    range: [-(diametro/2 + 8), diametro/2 + 2],
+                    showgrid: false,
+                    zeroline: false,
+                    showticklabels: false
+                },
+                annotations: annotations,
+                showlegend: false,
+                margin: { t: 60, l: 40, r: 40, b: 40 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('pipeChart', traces, layout);
+        }
+
+        // Tabla de resultados mejorada
+        function actualizarTablaResultados() {
+            const propiedades = Object.keys(resultados[materialesSeleccionados[0]]);
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Propiedad</th>
+                            ${materialesSeleccionados.map(m => 
+                                `<th style="background-color: ${MATERIALES[m].color}">${m}</th>`
+                            ).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Agrupar propiedades por categoría
+            const categorias = {
+                'Dimensiones': ['Diámetro Int. (mm)', 'Espesor (mm)', 'SDR', 'Área (cm²)'],
+                'Hidráulica': ['Velocidad (m/s)', 'Caudal (l/s)', 'Pérdida carga (m/km)'],
+                'Económicos': ['Costo total (USD)', 'Eficiencia'],
+                'Térmicos': ['Vida útil (años)', 'Factor temperatura', 'Dilatación (mm)'],
+                'Rendimiento': ['RIO'],
+                'Descripción': ['Descripción']
+            };
+            
+            for (const [categoria, props] of Object.entries(categorias)) {
+                html += `
+                    <tr>
+                        <td colspan="${materialesSeleccionados.length + 1}" style="background-color: #2c3e50; color: white; font-weight: bold">
+                            ${categoria}
+                        </td>
+                    </tr>
+                `;
+                
+                for (const prop of props) {
+                    html += `<tr><td>${prop}</td>`;
+                    for (const material of materialesSeleccionados) {
+                        const valor = resultados[material][prop];
+                        let celda = valor;
+                        
+                        if (typeof valor === 'number') {
+                            if (prop.includes('Costo')) {
+                                celda = `$${valor.toFixed(2)}`;
+                            } else if (prop.includes('Eficiencia') || prop.includes('Factor')) {
+                                celda = valor.toFixed(2);
+                            } else {
+                                celda = valor.toFixed(1);
+                            }
+                        }
+                        
+                        // Resaltar valores problemáticos
+                        let style = '';
+                        if (prop === 'Velocidad (m/s)' && valor > 2.5) {
+                            style = 'background-color: #fdecea;';
+                        } else if (prop === 'Vida útil (años)' && valor < 10) {
+                            style = 'background-color: #fdecea;';
+                        }
+                        
+                        html += `<td style="${style}">${celda}</td>`;
+                    }
+                    html += `</tr>`;
+                }
+            }
+            
+            html += `</tbody></table>`;
+            document.getElementById('resultsTable').innerHTML = html;
+        }
+
+        // Exportar a Excel
+        function exportarExcel() {
+            const workbook = XLSX.utils.book_new();
+            
+            // Hoja de resultados
+            const datos = [];
+            
+            // Encabezados
+            const encabezados = ['Propiedad', ...materialesSeleccionados];
+            datos.push(encabezados);
+            
+            // Datos
+            const propiedades = Object.keys(resultados[materialesSeleccionados[0]]);
+            propiedades.forEach(prop => {
+                const fila = [prop];
+                materialesSeleccionados.forEach(material => {
+                    const valor = resultados[material][prop];
+                    if (typeof valor === 'number') {
+                        fila.push(prop.includes('Costo') ? `$${valor.toFixed(2)}` : valor);
+                    } else {
+                        fila.push(valor);
+                    }
+                });
+                datos.push(fila);
+            });
+            
+            const worksheet = XLSX.utils.aoa_to_sheet(datos);
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Resultados");
+            
+            // Hoja de configuración
+            const configData = [
+                ['Parámetro', 'Valor'],
+                ['Diámetro', document.getElementById('diametro').value + ' mm'],
+                ['Clase presión', document.getElementById('clase_presion').value],
+                ['Espesor', document.getElementById('espesor').value + ' mm'],
+                ['Fluido', document.getElementById('fluido').value],
+                ['Temperatura', document.getElementById('temperatura').value + ' °C'],
+                ['Presión', document.getElementById('presion').value + ' bar'],
+                ['Longitud', document.getElementById('longitud').value + ' m'],
+                ['Materiales comparados', materialesSeleccionados.join(', ')]
+            ];
+            
+            const configSheet = XLSX.utils.aoa_to_sheet(configData);
+            XLSX.utils.book_append_sheet(workbook, configSheet, "Configuración");
+            
+            // Generar archivo
+            const fecha = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(workbook, `Comparativo_Tuberias_${fecha}.xlsx`);
+        }
+
+        // Exportar a PDF
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm'
+            });
+            
+            // Configuración inicial
+            doc.setFont('helvetica');
+            doc.setFontSize(16);
+            doc.setTextColor(40, 40, 40);
+            doc.text('Comparativo Técnico de Tuberías', 105, 15, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 105, 22, { align: 'center' });
+            
+            // Configuración
+            doc.setFontSize(14);
+            doc.text('Configuración del Análisis', 20, 35);
+            doc.setFontSize(10);
+            
+            const config = [
+                `Diámetro: ${document.getElementById('diametro').value} mm`,
+                `Clase presión: ${document.getElementById('clase_presion').value}`,
+                `Espesor: ${document.getElementById('espesor').value} mm`,
+                `Fluido: ${document.getElementById('fluido').value}`,
+                `Temperatura: ${document.getElementById('temperatura').value} °C`,
+                `Presión: ${document.getElementById('presion').value} bar`,
+                `Longitud: ${document.getElementById('longitud').value} m`,
+                `Materiales: ${materialesSeleccionados.join(', ')}`
+            ];
+            
+            config.forEach((item, i) => {
+                doc.text(item, 20, 45 + i * 5);
+            });
+            
+            // Resultados
+            doc.setFontSize(14);
+            doc.text('Resultados Comparativos', 20, 90);
+            doc.setFontSize(8);
+            
+            // Crear tabla de resultados
+            const propiedades = Object.keys(resultados[materialesSeleccionados[0]]);
+            const startY = 100;
+            let currentY = startY;
+            
+            // Encabezados
+            doc.setFillColor(44, 62, 80);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, currentY, 170, 8, 'F');
+            doc.text('Propiedad', 25, currentY + 5);
+            
+            let xPos = 60;
+            materialesSeleccionados.forEach((material, i) => {
+                const width = i === materialesSeleccionados.length - 1 ? 50 : 40;
+                doc.rect(xPos, currentY, width, 8, 'F');
+                doc.text(material, xPos + 5, currentY + 5);
+                xPos += width;
+            });
+            
+            currentY += 8;
+            
+            // Datos
+            doc.setFontSize(7);
+            doc.setTextColor(0, 0, 0);
+            
+            const categorias = {
+                'Dimensiones': ['Diámetro Int. (mm)', 'Espesor (mm)', 'SDR', 'Área (cm²)'],
+                'Hidráulica': ['Velocidad (m/s)', 'Caudal (l/s)', 'Pérdida carga (m/km)'],
+                'Económicos': ['Costo total (USD)', 'Eficiencia'],
+                'Térmicos': ['Vida útil (años)', 'Factor temperatura', 'Dilatación (mm)'],
+                'Rendimiento': ['RIO']
+            };
+            
+            for (const [categoria, props] of Object.entries(categorias)) {
+                // Categoría
+                doc.setFontSize(8);
+                doc.setFillColor(200, 200, 200);
+                doc.rect(20, currentY, 170, 6, 'F');
+                doc.text(categoria, 25, currentY + 4);
+                currentY += 6;
+                
+                // Propiedades
+                doc.setFontSize(7);
+                for (const prop of props) {
+                    if (currentY > 270) {
+                        doc.addPage();
+                        currentY = 20;
+                    }
+                    
+                    doc.text(prop, 25, currentY + 4);
+                    
+                    xPos = 60;
+                    materialesSeleccionados.forEach((material, i) => {
+                        const width = i === materialesSeleccionados.length - 1 ? 50 : 40;
+                        const valor = resultados[material][prop];
+                        let celda = '';
+                        
+                        if (typeof valor === 'number') {
+                            if (prop.includes('Costo')) {
+                                celda = `$${valor.toFixed(2)}`;
+                            } else if (prop.includes('Eficiencia') || prop.includes('Factor')) {
+                                celda = valor.toFixed(2);
+                            } else {
+                                celda = valor.toFixed(1);
+                            }
+                        } else {
+                            celda = valor;
+                        }
+                        
+                        // Resaltar valores problemáticos
+                        if (prop === 'Velocidad (m/s)' && valor > 2.5) {
+                            doc.setFillColor(253, 236, 234);
+                            doc.rect(xPos, currentY, width, 5, 'F');
+                        } else if (prop === 'Vida útil (años)' && valor < 10) {
+                            doc.setFillColor(253, 236, 234);
+                            doc.rect(xPos, currentY, width, 5, 'F');
+                        }
+                        
+                        doc.text(celda, xPos + 2, currentY + 4);
+                        xPos += width;
+                    });
+                    
+                    currentY += 5;
+                }
+            }
+            
+            // Guardar PDF
+            const fecha = new Date().toISOString().slice(0, 10);
+            doc.save(`Comparativo_Tuberias_${fecha}.pdf`);
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            inicializarControles();
+            actualizarSimulacion();
+        });
+    </script>
+</body>
+</html>
